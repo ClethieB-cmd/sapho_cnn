@@ -1,0 +1,31 @@
+{
+  "metadata": {
+    "projectName": "leandro",
+    "createdAt": "2026-04-24T22:39:49.455Z",
+    "lastModified": "2026-04-24T22:39:49.455Z",
+    "computerName": "MARCIANA",
+    "appVersion": "v4.1.12+25",
+    "projectPath": "C:\\Intel\\leandro",
+    "lastOpened": "2026-05-31T23:20:01.517Z"
+  },
+  "structure": {
+    "basePath": "C:\\Intel\\leandro",
+    "processors": [
+      {
+        "name": "procTest_00",
+        "config": {
+          "nBits": 23,
+          "nbMantissa": 16,
+          "nbExponent": 6,
+          "dataStackSize": 5,
+          "instructionStackSize": 5,
+          "inputPorts": 1,
+          "outputPorts": 1,
+          "gain": 128
+        },
+        "exists": true
+      }
+    ],
+    "folders": []
+  }
+}

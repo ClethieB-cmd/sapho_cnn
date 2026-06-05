@@ -1,0 +1,334 @@
+#PRNAME procTest_00
+#NUBITS 32
+#NDSTAC 8
+#SDEPTH 8
+#NUIOIN 7
+#NUIOOU 1
+#NBMANT 23
+#NBEXPO 8
+#NUGAIN 128
+
+// --- arrays globais (substituem os parametros do tipo array) ---
+float dense3_W[32];
+float dense3_b[1];
+float entrada[32];
+float saida[1];
+
+float buf_input[7];
+float buf_conv1[224];
+float conv1_kernel[160];
+float conv1_bias[32];
+float bn1_gamma[32];
+float bn1_beta[32];
+float bn1_mean[32];
+float bn1_var[32];
+
+float relu(float x) {
+    if (x > 0) return x;
+    return 0.0;
+}
+float fast_sqrt(float x) {
+    if (x <= 0) return 0.0;
+    float y;
+    y = 1.0;
+    y = (y + x/y) * 0.5;
+    y = (y + x/y) * 0.5;
+    y = (y + x/y) * 0.5;
+    y = (y + x/y) * 0.5;
+    return y;
+}
+void conv1d_1(int in_len, int in_ch,
+              int out_ch, int ksize,
+              int use_relu) {
+    int pad;
+    int pos;
+    int f;
+    int k;
+    int src;
+    int c;
+    float acc;
+    pad = ksize / 2;
+    pos = 0;
+    while (pos < in_len) {
+        f = 0;
+        while (f < out_ch) {
+            acc = conv1_bias[f];
+            k = 0;
+            while (k < ksize) {
+                src = pos + k - pad;
+                if (src > -1 && src < in_len) {
+                    c = 0;
+                    while (c < in_ch) {
+                        acc = acc + buf_input[src*in_ch+c]
+                                  * conv1_kernel[(f*ksize+k)*in_ch+c];
+                        c = c + 1;
+                    }
+                }
+                k = k + 1;
+            }
+            if (use_relu) buf_conv1[pos*out_ch+f] = relu(acc);
+            else          buf_conv1[pos*out_ch+f] = acc;
+            f = f + 1;
+        }
+        pos = pos + 1;
+    }
+}
+void batch_norm_1(int len, int n_ch) {
+    int pos;
+    int c;
+    float x;
+    float inv;
+    pos = 0;
+    while (pos < len) {
+        c = 0;
+        while (c < n_ch) {
+            x = buf_conv1[pos*n_ch + c];
+            inv = 1.0 / fast_sqrt(bn1_var[c] + 0.001);
+            buf_conv1[pos*n_ch + c] = bn1_gamma[c] * (x - bn1_mean[c]) * inv + bn1_beta[c];
+            c = c + 1;
+        }
+        pos = pos + 1;
+    }
+}
+// dense: le 'entrada', 'dense3_W', 'dense3_b' e escreve em 'saida'
+// parametros sao apenas escalares (tamanhos e flag)
+void dense(int in_size, int out_size, int use_relu) {
+    int k;
+    int j;
+    float acc;
+    j = 0;
+    while (j < out_size) {
+        acc = dense3_b[j];
+        k = 0;
+        while (k < in_size) {
+            acc = acc + entrada[k] * dense3_W[k*out_size + j];
+            k = k + 1;
+        }
+        if (use_relu) saida[j] = relu(acc);
+        else          saida[j] = acc;
+        j = j + 1;
+    }
+}
+
+void main() {
+    int k;
+
+    dense3_W[0]  =  1.02758563;
+    dense3_W[1]  = -0.95949298;
+    dense3_W[2]  = -1.07199407;
+    dense3_W[3]  = -1.39755583;
+    dense3_W[4]  = -0.79045939;
+    dense3_W[5]  = -3.77490973;
+    dense3_W[6]  =  0.73670244;
+    dense3_W[7]  = -1.22032547;
+    dense3_W[8]  = -1.11268592;
+    dense3_W[9]  = -0.73736936;
+    dense3_W[10] =  1.48400259;
+    dense3_W[11] =  2.07432842;
+    dense3_W[12] = -1.67504907;
+    dense3_W[13] = -3.04234862;
+    dense3_W[14] = -2.54613352;
+    dense3_W[15] = -1.77843344;
+    dense3_W[16] =  0.69946992;
+    dense3_W[17] =  2.39317775;
+    dense3_W[18] =  1.29160368;
+    dense3_W[19] = -0.86589253;
+    dense3_W[20] = -0.55899143;
+    dense3_W[21] =  1.20009458;
+    dense3_W[22] =  0.72674143;
+    dense3_W[23] =  0.92983609;
+    dense3_W[24] = -1.01318204;
+    dense3_W[25] =  1.22114646;
+    dense3_W[26] =  1.27411139;
+    dense3_W[27] =  0.78119272;
+    dense3_W[28] = -3.10512829;
+    dense3_W[29] =  1.82406974;
+    dense3_W[30] = -0.83993012;
+    dense3_W[31] =  0.86691701;
+
+
+    dense3_b[0] = 36.56319809;
+
+conv1_kernel[0] = -0.06995256; conv1_kernel[1] = 0.29551157;
+conv1_kernel[2] = -0.39748093; conv1_kernel[3] = -0.13228421;
+conv1_kernel[4] = 0.24334846; conv1_kernel[5] = -0.04381359;
+conv1_kernel[6] = 0.23055859; conv1_kernel[7] = -0.31459334;
+conv1_kernel[8] = 0.43017933; conv1_kernel[9] = -0.19022737;
+conv1_kernel[10] = 0.47473758; conv1_kernel[11] = -0.01122771;
+conv1_kernel[12] = -0.01581925; conv1_kernel[13] = -0.07868203;
+conv1_kernel[14] = -0.47015214; conv1_kernel[15] = 0.15626380;
+conv1_kernel[16] = -0.50843221; conv1_kernel[17] = 0.01128305;
+conv1_kernel[18] = 0.01050089; conv1_kernel[19] = -0.21895203;
+conv1_kernel[20] = 0.25897914; conv1_kernel[21] = -0.31970111;
+conv1_kernel[22] = 0.35050181; conv1_kernel[23] = -0.03279166;
+conv1_kernel[24] = 0.10766490; conv1_kernel[25] = -0.10097200;
+conv1_kernel[26] = 0.59849375; conv1_kernel[27] = 0.39806914;
+conv1_kernel[28] = -0.15174027; conv1_kernel[29] = -0.09217828;
+conv1_kernel[30] = 0.04731117; conv1_kernel[31] = -0.17689660;
+conv1_kernel[32] = 0.39528894; conv1_kernel[33] = -0.56129313;
+conv1_kernel[34] = 0.07660490; conv1_kernel[35] = -0.00326010;
+conv1_kernel[36] = -0.06579579; conv1_kernel[37] = 0.31700453;
+conv1_kernel[38] = -0.35043406; conv1_kernel[39] = 0.33974880;
+conv1_kernel[40] = 0.12991685; conv1_kernel[41] = 0.48146486;
+conv1_kernel[42] = -0.21296766; conv1_kernel[43] = -0.11532152;
+conv1_kernel[44] = 0.20890264; conv1_kernel[45] = -0.91577315;
+conv1_kernel[46] = 0.37693480; conv1_kernel[47] = -0.11767092;
+conv1_kernel[48] = -0.02791644; conv1_kernel[49] = -0.16948451;
+conv1_kernel[50] = -0.13483432; conv1_kernel[51] = 0.10127184;
+conv1_kernel[52] = 0.49259141; conv1_kernel[53] = 0.25778967;
+conv1_kernel[54] = -0.28288034; conv1_kernel[55] = 0.17719758;
+conv1_kernel[56] = -0.03881807; conv1_kernel[57] = -0.10876718;
+conv1_kernel[58] = 0.68752664; conv1_kernel[59] = 0.21320529;
+conv1_kernel[60] = 0.00118347; conv1_kernel[61] = -0.14578125;
+conv1_kernel[62] = 0.51008970; conv1_kernel[63] = -0.31231719;
+conv1_kernel[64] = 0.24359477; conv1_kernel[65] = 0.22734003;
+conv1_kernel[66] = -0.35926205; conv1_kernel[67] = -0.25031999;
+conv1_kernel[68] = 0.07959412; conv1_kernel[69] = -0.14048253;
+conv1_kernel[70] = -1.01984358; conv1_kernel[71] = 0.06316286;
+conv1_kernel[72] = -0.46420792; conv1_kernel[73] = 0.23963797;
+conv1_kernel[74] = -0.01234280; conv1_kernel[75] = -0.00376535;
+conv1_kernel[76] = -0.02984406; conv1_kernel[77] = -0.12192815;
+conv1_kernel[78] = 0.77745664; conv1_kernel[79] = -0.26079077;
+conv1_kernel[80] = -0.07070503; conv1_kernel[81] = 1.54984808;
+conv1_kernel[82] = 0.07682301; conv1_kernel[83] = -0.11907722;
+conv1_kernel[84] = 0.04573997; conv1_kernel[85] = -0.22089976;
+conv1_kernel[86] = 0.18935616; conv1_kernel[87] = -0.72632098;
+conv1_kernel[88] = 0.15061775; conv1_kernel[89] = 0.01612859;
+conv1_kernel[90] = 0.27464572; conv1_kernel[91] = -0.18043135;
+conv1_kernel[92] = -0.32022649; conv1_kernel[93] = 0.16342227;
+conv1_kernel[94] = -1.00597954; conv1_kernel[95] = -0.27191961;
+conv1_kernel[96] = 0.51493531; conv1_kernel[97] = 0.26689124;
+conv1_kernel[98] = -0.07493893; conv1_kernel[99] = 0.01786440;
+conv1_kernel[100] = -0.13335730; conv1_kernel[101] = -0.42053542;
+conv1_kernel[102] = 0.37686756; conv1_kernel[103] = -0.11807598;
+conv1_kernel[104] = 0.12812573; conv1_kernel[105] = -0.01147597;
+conv1_kernel[106] = 0.23030730; conv1_kernel[107] = -0.47331986;
+conv1_kernel[108] = 0.24161015; conv1_kernel[109] = -0.02794025;
+conv1_kernel[110] = -0.06735083; conv1_kernel[111] = 0.29709494;
+conv1_kernel[112] = -0.36114550; conv1_kernel[113] = 0.37205583;
+conv1_kernel[114] = -0.01864033; conv1_kernel[115] = 0.60310489;
+conv1_kernel[116] = -0.31702709; conv1_kernel[117] = 0.18203554;
+conv1_kernel[118] = -0.10207778; conv1_kernel[119] = 0.01484696;
+conv1_kernel[120] = -0.17687301; conv1_kernel[121] = 0.09932595;
+conv1_kernel[122] = 1.00811970; conv1_kernel[123] = 0.04699251;
+conv1_kernel[124] = -0.01434948; conv1_kernel[125] = -0.41665435;
+conv1_kernel[126] = -0.25412372; conv1_kernel[127] = 0.23633215;
+conv1_kernel[128] = -0.36754435; conv1_kernel[129] = -0.02036423;
+conv1_kernel[130] = -0.09571665; conv1_kernel[131] = 0.28238544;
+conv1_kernel[132] = -0.16396655; conv1_kernel[133] = -1.29707813;
+conv1_kernel[134] = 0.12175544; conv1_kernel[135] = 0.26230526;
+conv1_kernel[136] = -0.91769034; conv1_kernel[137] = -0.00571486;
+conv1_kernel[138] = 0.09701118; conv1_kernel[139] = 0.06786145;
+conv1_kernel[140] = -0.02252382; conv1_kernel[141] = 0.29894349;
+conv1_kernel[142] = -0.70099205; conv1_kernel[143] = 0.22838600;
+conv1_kernel[144] = -0.00577674; conv1_kernel[145] = 0.15184565;
+conv1_kernel[146] = -0.66091037; conv1_kernel[147] = 0.32764265;
+conv1_kernel[148] = -0.11568482; conv1_kernel[149] = 0.05060907;
+conv1_kernel[150] = -0.06045922; conv1_kernel[151] = -0.14915934;
+conv1_kernel[152] = 0.11394174; conv1_kernel[153] = -0.15637358;
+conv1_kernel[154] = 0.75811869; conv1_kernel[155] = -0.16165109;
+conv1_kernel[156] = -0.07538376; conv1_kernel[157] = 0.01574766;
+conv1_kernel[158] = -0.18054146; conv1_kernel[159] = -0.02196602;
+
+conv1_bias[0] = 0.81219232; conv1_bias[1] = -1.06909311;
+conv1_bias[2] = 0.02328714; conv1_bias[3] = 0.83866137;
+conv1_bias[4] = -0.88060641; conv1_bias[5] = -0.08187240;
+conv1_bias[6] = 0.62539697; conv1_bias[7] = -1.03092027;
+conv1_bias[8] = 0.23813468; conv1_bias[9] = 1.66398931;
+conv1_bias[10] = -1.08528686; conv1_bias[11] = 0.79355770;
+conv1_bias[12] = 0.16509844; conv1_bias[13] = 0.46415806;
+conv1_bias[14] = -1.39973319; conv1_bias[15] = -1.29499435;
+conv1_bias[16] = 0.29522485; conv1_bias[17] = 1.46686542;
+conv1_bias[18] = -0.40189031; conv1_bias[19] = -1.05253661;
+conv1_bias[20] = 1.19926214; conv1_bias[21] = 2.76932216;
+conv1_bias[22] = 0.17231344; conv1_bias[23] = -0.22194178;
+conv1_bias[24] = 0.82239068; conv1_bias[25] = 1.20236051;
+conv1_bias[26] = 0.64364028; conv1_bias[27] = 0.12204061;
+conv1_bias[28] = -0.43177417; conv1_bias[29] = -0.24045330;
+conv1_bias[30] = -0.47674364; conv1_bias[31] = 0.68584996;
+
+
+
+bn1_gamma[0] = 0.95073855; bn1_gamma[1] = 1.29621029;
+bn1_gamma[2] = 0.81097412; bn1_gamma[3] = 1.08937562;
+bn1_gamma[4] = 0.58519715; bn1_gamma[5] = 0.74405801;
+bn1_gamma[6] = 1.67249477; bn1_gamma[7] = 1.32369983;
+bn1_gamma[8] = 0.92301202; bn1_gamma[9] = 0.69187385;
+bn1_gamma[10] = 0.71991444; bn1_gamma[11] = 0.38621759;
+bn1_gamma[12] = 1.13098860; bn1_gamma[13] = 0.74597520;
+bn1_gamma[14] = 0.67419577; bn1_gamma[15] = 1.05944526;
+bn1_gamma[16] = 0.74678689; bn1_gamma[17] = 0.90318698;
+bn1_gamma[18] = 0.72951162; bn1_gamma[19] = 0.66725916;
+bn1_gamma[20] = 1.03287458; bn1_gamma[21] = 1.17977297;
+bn1_gamma[22] = 1.52786446; bn1_gamma[23] = 1.01339686;
+bn1_gamma[24] = 0.49922273; bn1_gamma[25] = 0.99054557;
+bn1_gamma[26] = 1.21768188; bn1_gamma[27] = 0.92076570;
+bn1_gamma[28] = 0.93541372; bn1_gamma[29] = 1.64225125;
+bn1_gamma[30] = 1.09744740; bn1_gamma[31] = 1.02565408;
+
+bn1_beta[0] = 0.12482329; bn1_beta[1] = 0.10686193;
+bn1_beta[2] = -0.06126404; bn1_beta[3] = -0.08804229;
+bn1_beta[4] = -0.25204819; bn1_beta[5] = -0.22406270;
+bn1_beta[6] = 0.09336779; bn1_beta[7] = 0.01224774;
+bn1_beta[8] = -0.44019634; bn1_beta[9] = -0.10417137;
+bn1_beta[10] = 0.51624751; bn1_beta[11] = -0.01256470;
+bn1_beta[12] = 0.21191576; bn1_beta[13] = -0.11484987;
+bn1_beta[14] = 0.12378779; bn1_beta[15] = 0.25039375;
+bn1_beta[16] = -0.01115677; bn1_beta[17] = 0.13237186;
+bn1_beta[18] = -0.27569962; bn1_beta[19] = 0.31183755;
+bn1_beta[20] = 0.10688672; bn1_beta[21] = -0.15430185;
+bn1_beta[22] = -0.43222666; bn1_beta[23] = -0.32456183;
+bn1_beta[24] = 0.26765159; bn1_beta[25] = -0.08550530;
+bn1_beta[26] = 0.23795071; bn1_beta[27] = 0.02809905;
+bn1_beta[28] = -0.03556617; bn1_beta[29] = 0.50951856;
+bn1_beta[30] = -0.22165315; bn1_beta[31] = 0.28947824;
+
+bn1_mean[0] = 5.86706066; bn1_mean[1] = 12.52507210;
+bn1_mean[2] = 20.10947990; bn1_mean[3] = 0.27003497;
+bn1_mean[4] = 31.92923737; bn1_mean[5] = 66.90320587;
+bn1_mean[6] = 5.21951771; bn1_mean[7] = 21.34096527;
+bn1_mean[8] = 37.92735291; bn1_mean[9] = 2.44768071;
+bn1_mean[10] = 52.14859009; bn1_mean[11] = 74.73741150;
+bn1_mean[12] = 30.63576508; bn1_mean[13] = 0.51080889;
+bn1_mean[14] = 0.56615293; bn1_mean[15] = 35.60454941;
+bn1_mean[16] = 131.88406372; bn1_mean[17] = 0.62167156;
+bn1_mean[18] = 2.18217158; bn1_mean[19] = 47.06620407;
+bn1_mean[20] = 11.03265953; bn1_mean[21] = 5.31637335;
+bn1_mean[22] = 19.67481995; bn1_mean[23] = 31.09084892;
+bn1_mean[24] = 102.78402710; bn1_mean[25] = 0.75539702;
+bn1_mean[26] = 1.17807782; bn1_mean[27] = 3.84278417;
+bn1_mean[28] = 1.53372061; bn1_mean[29] = 4.66171026;
+bn1_mean[30] = 42.18118668; bn1_mean[31] = 0.13199633;
+
+bn1_var[0] = 185.79716492; bn1_var[1] = 483.49957275;
+bn1_var[2] = 1688.59582520; bn1_var[3] = 0.45000088;
+bn1_var[4] = 1296.45031738; bn1_var[5] = 8042.46923828;
+bn1_var[6] = 273.77346802; bn1_var[7] = 783.27819824;
+bn1_var[8] = 2616.49853516; bn1_var[9] = 124.39179230;
+bn1_var[10] = 4984.63183594; bn1_var[11] = 8434.56054688;
+bn1_var[12] = 1486.42553711; bn1_var[13] = 4.40196180;
+bn1_var[14] = 10.21200943; bn1_var[15] = 3329.40893555;
+bn1_var[16] = 30939.38671875; bn1_var[17] = 4.26174212;
+bn1_var[18] = 63.90745926; bn1_var[19] = 4208.03076172;
+bn1_var[20] = 577.15679932; bn1_var[21] = 72.17111969;
+bn1_var[22] = 739.17816162; bn1_var[23] = 2196.07446289;
+bn1_var[24] = 15377.69433594; bn1_var[25] = 10.85047913;
+bn1_var[26] = 22.46151161; bn1_var[27] = 104.23241425;
+bn1_var[28] = 23.77828598; bn1_var[29] = 231.84283447;
+bn1_var[30] = 4835.58837891; bn1_var[31] = 0.09489776;
+
+
+
+    k = 0;
+    while (k < 32) {
+        entrada[k] = 0.0;
+        k = k + 1;
+    }
+    conv1d_1(7, 1, 32, 5, 1);
+    batch_norm_1(7, 32);
+    dense(32, 1, 0);
+
+   
+
+    fout(0, saida[0]);
+}
