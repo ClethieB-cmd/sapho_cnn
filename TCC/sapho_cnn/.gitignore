@@ -1,0 +1,30 @@
+# Gerados pela compilacao/simulacao do SAPHO (cada PC recria) -------------
+cnn_sapho/Hardware/
+cnn_sapho/Simulation/
+cnn_sapho/Software/*.asm
+cnn_sapho/test_output_*.txt
+
+# Copias que a simulacao deixa na raiz do projeto (iguais as de cnn_sapho/cnn_sapho/)
+/cnn_sapho_data.mif
+/cnn_sapho_inst.mif
+/pc_cnn_sapho_mem.txt
+
+# Forma de onda da simulacao (17 MB, recriada a cada simulacao) -------------
+*.vcd
+*.fst
+
+# Cache e configuracao local da AURORA (guardam caminhos deste PC) ----------
+.aurora/
+.slang/
+
+# Scripts de geracao (NAO necessarios: os pesos/entradas ja vao fixos) -----
+gen_cnn_weights.py
+export_sapho.py
+
+# Binario da inferencia em C (recompile: gcc -O2 -lm -o cnn_inference cnn_inference.c)
+*.exe
+
+# Scratch / Python --------------------------------------------------------
+_deliver/
+__pycache__/
+*.pyc

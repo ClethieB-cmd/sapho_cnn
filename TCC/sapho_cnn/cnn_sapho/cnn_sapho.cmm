@@ -1,0 +1,102 @@
+// CNN completa num unico processador SAPHO. Conv1(32,k5)->ReLU->BN1 ->
+// Conv2(16,k3)->ReLU->BN2 -> Dense(64)->ReLU -> Dense(32)->ReLU -> Dense(1).
+// Pesos = CNN TREINADA. BN explicita (a*x+b). I/O inteiro: entrada = int(amostra*2^20),
+// descalada dentro; saida = int(pred*2^20).
+#NUBITS 32
+#NBMANT 23
+#NBEXPO 8
+#NDSTAC 64
+#SDEPTH 16
+#NUIOIN 1
+#NUIOOU 1
+#NUGAIN 128
+#FROUND 2
+
+#define SCALE_IN  1048576
+#define SCALE_OUT 1048576
+
+float conv1_W[160]  "conv1_W.txt";
+float conv1_b[32]   "conv1_b.txt";
+float bn1_a[32]     "bn1_a.txt";
+float bn1_b[32]     "bn1_b.txt";
+float conv2_W[1536] "conv2_W.txt";
+float conv2_b[16]   "conv2_b.txt";
+float bn2_a[16]     "bn2_a.txt";
+float bn2_b[16]     "bn2_b.txt";
+float dense1_W[7168] "dense1_W.txt";
+float dense1_b[64]   "dense1_b.txt";
+float dense2_W[2048] "dense2_W.txt";
+float dense2_b[32]   "dense2_b.txt";
+float dense3_W[32]   "dense3_W.txt";
+float dense3_b[1]    "dense3_b.txt";
+
+float in_buf[7];
+float buf_conv1[7][32];
+float buf_conv2[7][16];
+float buf_flat[112];
+float buf_d1[64];
+float buf_d2[32];
+
+int pos; int fx; int kx; int cx; int src; int ii; int jx;
+float acc; float tmp; float pred;
+
+void conv1_layer() {
+    pos = 0;
+    while (pos < 7) {
+        fx = 0;
+        while (fx < 32) {
+            acc = conv1_b[fx];
+            kx = 0;
+            while (kx < 5) {
+                src = pos + kx - 2;
+                if (src >= 0 && src < 7) { tmp = in_buf[src] * conv1_W[fx*5 + kx]; acc = acc + tmp; }
+                kx = kx + 1;
+            }
+            acc = pset(acc);
+            buf_conv1[pos][fx] = acc*bn1_a[fx] + bn1_b[fx];
+            fx = fx + 1;
+        }
+        pos = pos + 1;
+    }
+}
+
+void conv2_layer() {
+    pos = 0;
+    while (pos < 7) {
+        fx = 0;
+        while (fx < 16) {
+            acc = conv2_b[fx];
+            kx = 0;
+            while (kx < 3) {
+                src = pos + kx - 1;
+                if (src >= 0 && src < 7) {
+                    cx = 0;
+                    while (cx < 32) { tmp = buf_conv1[src][cx] * conv2_W[(fx*3 + kx)*32 + cx]; acc = acc + tmp; cx = cx + 1; }
+                }
+                kx = kx + 1;
+            }
+            acc = pset(acc);
+            buf_conv2[pos][fx] = acc*bn2_a[fx] + bn2_b[fx];
+            fx = fx + 1;
+        }
+        pos = pos + 1;
+    }
+}
+
+void dense_layers() {
+    pos = 0;
+    while (pos < 7) { jx = 0; while (jx < 16) { buf_flat[pos*16 + jx] = buf_conv2[pos][jx]; jx = jx + 1; } pos = pos + 1; }
+    jx = 0;
+    while (jx < 64) { acc = dense1_b[jx]; ii = 0; while (ii < 112) { tmp = buf_flat[ii] * dense1_W[ii*64 + jx]; acc = acc + tmp; ii = ii + 1; } buf_d1[jx] = pset(acc); jx = jx + 1; }
+    jx = 0;
+    while (jx < 32) { acc = dense2_b[jx]; ii = 0; while (ii < 64) { tmp = buf_d1[ii] * dense2_W[ii*32 + jx]; acc = acc + tmp; ii = ii + 1; } buf_d2[jx] = pset(acc); jx = jx + 1; }
+    acc = dense3_b[0]; ii = 0; while (ii < 32) { tmp = buf_d2[ii] * dense3_W[ii]; acc = acc + tmp; ii = ii + 1; } pred = acc;
+}
+
+void main() {
+    while (1) {
+        ii = 0; while (ii < 7) { in_buf[ii] = fin(0) / SCALE_IN; ii = ii + 1; }
+        conv1_layer(); conv2_layer(); dense_layers();
+        fout(0, pred * SCALE_OUT);
+    }
+}

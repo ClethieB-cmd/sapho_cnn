@@ -1,0 +1,13 @@
+global pos 1
+global fx 1
+global kx 1
+global cx 1
+global src 1
+global ii 1
+global jx 1
+global acc 2
+global tmp 2
+global pred 2
+num_ins 291
+srcdir C:/Intel/tcc/sapho_cnn-main/cnn_sapho
+lang C+-

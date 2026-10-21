@@ -1,0 +1,48 @@
+{
+  "metadata": {
+    "projectName": "sapho_cnn",
+    "createdAt": "2026-06-03T21:23:49.345Z",
+    "lastModified": "2026-10-20T00:06:08.736Z",
+    "computerName": "XPS8930DUQ",
+    "appVersion": "6.3.2",
+    "projectPath": "C:\\Intel\\tcc\\sapho_cnn-main",
+    "lastOpened": "2026-10-19T17:24:14.708Z"
+  },
+  "structure": {
+    "basePath": "C:\\Intel\\tcc\\sapho_cnn-main",
+    "folders": [],
+    "processors": [
+      {
+        "name": "cnn_sapho",
+        "exists": true,
+        "numClocks": 2000000
+      }
+    ],
+    "topLevelFile": "cnn_sapho_top.v",
+    "testbenchFile": "cnn_sapho_test.v",
+    "synthesizableFiles": [
+      {
+        "name": "cnn_sapho_top.v",
+        "path": "cnn_sapho_top.v",
+        "isTopLevel": true
+      },
+      {
+        "name": "cnn_sapho.v",
+        "path": "cnn_sapho\\cnn_sapho\\cnn_sapho.v",
+        "isTopLevel": false
+      }
+    ],
+    "testbenchFiles": [
+      {
+        "name": "cnn_sapho_test.v",
+        "path": "cnn_sapho_test.v",
+        "isTopLevel": true
+      },
+      {
+        "name": "cnn_sapho_tb.v",
+        "path": "cnn_sapho\\cnn_sapho\\cnn_sapho_tb.v",
+        "isTopLevel": false
+      }
+    ]
+  }
+}

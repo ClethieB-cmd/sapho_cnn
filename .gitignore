@@ -1,0 +1,18 @@
+# Cache e configuracao local da AURORA (guardam caminhos deste PC)
+.aurora/
+.slang/
+
+# Forma de onda das simulacoes (grande, recriada a cada simulacao)
+*.vcd
+*.fst
+
+# Binarios compilados
+*.exe
+
+# Python
+__pycache__/
+*.pyc
+
+# Windows
+Thumbs.db
+desktop.ini
